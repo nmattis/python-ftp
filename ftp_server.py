@@ -7,9 +7,6 @@ Checks user name, password and allows for the getting and putting of
 files from client to server.
 """
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+class FTPServer():
+    def __init__(self):
+        pass
