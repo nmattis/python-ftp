@@ -6,51 +6,64 @@ Connects to a specified ftp_server, allows for the downloading
 or uploading of files.
 """
 
-class FTPClient():
-    def __init__(self):
-        pass
+import sys
+from cmd import Cmd
 
-    def connect_to_server(self, ip_address, user_name, user_password):
+
+class FTPClient(Cmd):
+    def do_rftp(self, args):
         """
-        If the provided user name and password are correct than access to the
-        FTPServer is granted, otherwise throws an error.
+        Usage:
+            rftp <FTP Server Address> <User> <Password>
 
-        Params:
-            ip_address (int): ip address of the running FTPServer instance
-            user_name (str): user name of the user trying to connect
-            user_password(str): password associated with the user name to connect
-
-        Returns if a successful connection was established, errors out otherwise.
+        If the provided ip address, user name, and password are valid than access to the
+        FTPServer is granted.
         """
-        pass
+        vals = args.split()
+        if len(vals) == 3:
+            ip_address, user_name, password = vals
+            print("Trying to connect to server {} with user:password -> {}:{}".format(ip_address, user_name, password))
+            print()
+        else:
+            print("rftp requires exactly 3 arguments...")
+            print()
 
-    def get_file(self, file_name):
+    def do_rget(self, args):
         """
+        Usage:
+            rget <File Name>
+
         If connected to an FTPServer instance and the file exists then it
         instantiates a download of that file from the server to client.
-
-        Params:
-            file_name (str): name of the file to download
-
-        Returns success of the file download, if file doesn't exist errors out.
         """
-        pass
+        vals = args.split()
+        if len(vals) == 1:
+            file_name = vals[0]
+            print("Trying to download file {} from server to client.".format(file_name))
+            print()
+        else:
+            print("rget requires exactly 1 arguments...")
+            print()
     
-    def put_file(self, file_name):
+    def do_rput(self, args):
         """
+        Usage:
+            rput <File Name>
+
         If connected to an FTPServer instance and the file exists on the client
         it instantiates an upload of the file to the FTPServer.
+        """
+        vals = args.split()
+        if len(vals) == 1:
+            file_name = vals[0]
+            print("Trying to upload file {} from client to server.".format(file_name))
+            print()
+        else:        
+            print("rput requires exactly 1 arguments...")
+            print()
 
-        Params:
-            file_name (str): name of the file to download
-        
-        Returns success of the file upload, if file doesn't exist errors out.
+    def do_quit(self, args):
         """
-        pass
-
-    def run_client_process(self):
+        Exits the command loop of the client program.
         """
-        Runs a prompt for interacting with the FTPClient so you can perform
-        the various specified commands.
-        """
-        pass
+        sys.exit("Quitting FTPClient...")
