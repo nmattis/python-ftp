@@ -18,6 +18,7 @@ class FTPClient(Cmd):
         Cmd.prompt = ">>> "
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ftp_port = 2121
+        self.client_connected = False
 
     def do_rftp(self, args):
         """
