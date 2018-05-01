@@ -6,11 +6,19 @@ Connects to a specified ftp_server, allows for the downloading
 or uploading of files.
 """
 
+import socket
 import sys
 from cmd import Cmd
 
 
 class FTPClient(Cmd):
+    def __init__(self):
+        Cmd.__init__(self)
+        Cmd.intro = "Starting FTPClient. Type help or ? to list commands.\n"
+        Cmd.prompt = ">>> "
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.ftp_port = 2121
+
     def do_rftp(self, args):
         """
         Usage:
@@ -24,6 +32,7 @@ class FTPClient(Cmd):
             ip_address, user_name, password = vals
             print("Trying to connect to server {} with user:password -> {}:{}".format(ip_address, user_name, password))
             print()
+            # self.client_socket.connect((ip_address, self.ftp_port))
         else:
             print("rftp requires exactly 3 arguments...")
             print()

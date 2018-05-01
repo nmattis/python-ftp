@@ -20,14 +20,14 @@ def main():
     args = ap.parse_args()
 
     if args.server:
-        # run the server
-        pass
+        # create and run the server
+        server = FTPServer()
+        server.run_server()
 
     if args.client:
         # create and run client
         client = FTPClient()
-        client.prompt = ">>> "
-        client.cmdloop("Starting FTP Client...")
+        client.cmdloop()
 
     if not args.server and not args.client:
         # none specified so exit
