@@ -16,9 +16,9 @@ class FTPClient(Cmd):
         Cmd.__init__(self)
         Cmd.intro = "Starting FTPClient. Type help or ? to list commands.\n"
         Cmd.prompt = ">>> "
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ftp_port = 2121
-        self.client_connected = False
+        self.connected = False
 
     def do_rftp(self, args):
         """
@@ -33,7 +33,20 @@ class FTPClient(Cmd):
             ip_address, user_name, password = vals
             print("Trying to connect to server {} with user:password -> {}:{}".format(ip_address, user_name, password))
             print()
-            # self.client_socket.connect((ip_address, self.ftp_port))
+            self.socket.connect((ip_address, self.ftp_port))
+
+            message = "Trying to connect."
+            print("Sending message: {}".format(message))
+            self.socket.sendall(message.encode('utf-8'))
+
+            # wait and look for a response
+            amount_received = 0
+            amount_expected = len(message)
+
+            while amount_received < amount_expected:
+                info = self.socket.recv(1024)
+                amount_received += len(info)
+                print("Received from server: {}".format(info))
         else:
             print("rftp requires exactly 3 arguments...")
             print()
@@ -76,4 +89,5 @@ class FTPClient(Cmd):
         """
         Exits the command loop of the client program.
         """
+        self.socket.close()
         sys.exit("Quitting FTPClient...")
