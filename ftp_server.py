@@ -8,6 +8,7 @@ files from client to server.
 """
 
 import csv
+import os
 import socket
 from threading import Thread
 
@@ -60,7 +61,34 @@ class ClientThread(Thread):
         print("Server done receiving from client {}:{}. File Saved.".format(self.ip, self.port))
     
     def __send_file(self, file_name):
-        print(file_name)
+        file_location = "server_files/{}".format(file_name)
+        try:
+            file_size = os.path.getsize(file_location)
+            self.socket.sendall("Exists,{}".format(file_size).encode('utf-8'))
+
+            while True:
+                recv_data = self.socket.recv(self.buffer_size)
+                packet_info = recv_data.decode('utf-8').strip().split(",")
+
+                if packet_info[0] == "Ready":
+                    print("Sending file {} to client {}".format(file_name, self.ip))
+
+                    with open(file_location, "rb") as file:
+                        self.socket.sendfile(file)
+                elif packet_info[0] == "Received":
+                    if int(packet_info[1]) == file_size:
+                        self.socket.sendall("Success".encode('utf-8'))
+                        print("{} successfully downloaded to client {}:{}".format(file_name, self.ip, self.port))
+                        break
+                    else:
+                        print("Something went wrong trying to download to client {}:{}. Try again".format(self.ip, self.port))
+                        break
+                else:
+                    print("Something went wrong trying to download to client {}:{}. Try again".format(self.ip, self.port))
+                    break
+        except IOError:
+            print("File {} does not exist on server".format(file_name))
+            self.socket.sendall("Failed".encode('utf-8'))
 
 
 class FTPServer():

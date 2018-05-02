@@ -92,14 +92,57 @@ class FTPClient(Cmd):
         If connected to an FTPServer instance and the file exists then it
         instantiates a download of that file from the server to client.
         """
-        vals = args.split()
-        if len(vals) == 1:
-            file_name = vals[0]
-            print("Trying to download file {} from server to client.".format(file_name))
-            print()
+        if self.connected:
+            vals = args.split()
+            if len(vals) == 1:
+                file_name = vals[0]
+                print("Trying to download file {} from server to client.".format(file_name))
+                print()
+
+                try:
+                    packet = "rget,{}".format(file_name)
+                    self.socket.sendall(packet.encode('utf-8'))
+
+                    while True:
+                        recv_data = self.socket.recv(1024)
+                        packet_info = recv_data.decode('utf-8').strip().split(",")
+
+                        if packet_info[0] == "Exists":
+                            self.socket.sendall("Ready".encode('utf-8'))
+                            print("{} exits on the server, ready to download.".format(file_name))
+
+                            save_file = open(file_name, "wb")
+
+                            amount_recieved_data = 0
+                            while amount_recieved_data < int(packet_info[1]):
+                                recv_data = self.socket.recv(1024)
+                                amount_recieved_data += len(recv_data)
+                                save_file.write(recv_data)
+
+                            save_file.close()
+
+                            self.socket.sendall("Received,{}".format(amount_recieved_data).encode('utf-8'))
+                        elif packet_info[0] == "Success":
+                            print("Client done downloading {} from server. File Saved.".format(file_name))
+                            break
+                        elif packet_info[0] == "Failed":
+                            print("File {} does not exist on server.".format(file_name))
+                            break
+                        else:
+                            print("Something went wrong when downloading {} from server. Try again.".format(file_name))
+                            break
+                except socket_error:
+                    message = (
+                        "Looks something happened to server {}. "
+                        "Check and ensure you have the right address "
+                        "and the server is running.".format(self.socket.getpeername())
+                    )
+                    print(message)
+            else:
+                print("rget requires exactly 1 arguments...")
+                print()
         else:
-            print("rget requires exactly 1 arguments...")
-            print()
+            print("You must use the 'rftp' command to first connect to a server before uploading a file.")
     
     def do_rput(self, args):
         """
