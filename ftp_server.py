@@ -29,7 +29,6 @@ class ClientThread(Thread):
                 self.socket.sendall(data)
             else:
                 print("No more data from client...")
-                break
 
 
 class FTPServer():
@@ -55,10 +54,37 @@ class FTPServer():
             client_socket, (client_ip, port) = self.server_socket.accept()
             print("Connection from {}".format(client_ip))
 
-            # once we get a connection just spawn a thread and deal with it
-            thread = ClientThread(client_socket, client_ip, port)
-            thread.start()
-            created_threads.append(thread)
+            # want to verify client user, password before spawing thread
+            while True:
+                auth_data = client_socket.recv(self.buffer_size)
+                print("Recieved: {}".format(auth_data))
+                recv_data = auth_data.decode('utf-8').strip().split(",")
+
+                if len(recv_data) != 3:
+                    print("The data recieved from client {} is wrong.".format(client_ip))
+                    error = "Expected,'rftp','user:user','passwd:passwd'"
+                    client_socket.sendall(error.encode('utf-8'))
+                    client_socket.shutdown(socket.SHUT_RDWR)
+                    client_socket.close()
+                    break
+                else:
+                    user_info = recv_data[1].split(":")
+                    pass_info = recv_data[2].split(":")
+                    if self.__authenticate_user(user_info[1], pass_info[1]):
+                        message = "Success"
+                        client_socket.sendall(message.encode('utf-8'))
+
+                        # once we get a connection just spawn a thread and deal with it
+                        thread = ClientThread(client_socket, client_ip, port)
+                        thread.start()
+                        created_threads.append(thread)
+                        break
+                    else:
+                        message = "Unknown"
+                        client_socket.sendall(message.encode('utf-8'))
+                        client_socket.shutdown(socket.SHUT_RDWR)
+                        client_socket.close()
+                        break
 
         for t in created_threads:
             t.join()

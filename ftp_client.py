@@ -6,9 +6,11 @@ Connects to a specified ftp_server, allows for the downloading
 or uploading of files.
 """
 
+import errno
 import socket
 import sys
 from cmd import Cmd
+from socket import error as socket_error
 
 
 class FTPClient(Cmd):
@@ -16,7 +18,7 @@ class FTPClient(Cmd):
         Cmd.__init__(self)
         Cmd.intro = "Starting FTPClient. Type help or ? to list commands.\n"
         Cmd.prompt = ">>> "
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = None 
         self.ftp_port = 2121
         self.connected = False
 
@@ -30,23 +32,50 @@ class FTPClient(Cmd):
         """
         vals = args.split()
         if len(vals) == 3:
-            ip_address, user_name, password = vals
-            print("Trying to connect to server {} with user:password -> {}:{}".format(ip_address, user_name, password))
+            server_ip, user_name, password = vals
+            print("Trying to connect to server {} with user:password -> {}:{}".format(server_ip, user_name, password))
             print()
-            self.socket.connect((ip_address, self.ftp_port))
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.connect((server_ip, self.ftp_port))
+                packet = "rftp,user:{},passwd:{}".format(user_name, password)
+                print("Sending message: {}".format(packet))
+                self.socket.sendall(packet.encode('utf-8'))
 
-            message = "Trying to connect."
-            print("Sending message: {}".format(message))
-            self.socket.sendall(message.encode('utf-8'))
+                while True:
+                    recv_data = self.socket.recv(1024)
+                    recv_data = recv_data.decode('utf-8').strip().split(",")
 
-            # wait and look for a response
-            amount_received = 0
-            amount_expected = len(message)
+                    if recv_data[0] == 'Success':
+                        self.connected = True
+                        print("Successfully Authenticated!")
+                        break
 
-            while amount_received < amount_expected:
-                info = self.socket.recv(1024)
-                amount_received += len(info)
-                print("Received from server: {}".format(info))
+                    if recv_data[0] == 'Unknown':
+                        self.connected = False
+                        print("User name and password incorrect, connection refused.")
+                        self.socket.shutdown(socket.SHUT_RDWR)
+                        self.socket.close()
+                        break
+
+                    if recv_data[0] == 'Expected':
+                        self.connected = False
+                        print("The client did not send the correct information, connection refused.")
+                        self.socket.shutdown(socket.SHUT_RDWR)
+                        self.socket.close()
+                        break
+                    
+            except socket_error as serr:
+                if serr.errno != errno.ECONNREFUSED:
+                    # if it isn't a connection refused reraise to deal with somewhere else
+                    raise serr
+                # else deal with it
+                message = (
+                    "Looks something happened to server {}. "
+                    "Check and ensure you have the right address "
+                    "and the server is running.".format(server_ip)
+                )
+                print(message)
         else:
             print("rftp requires exactly 3 arguments...")
             print()
@@ -89,5 +118,8 @@ class FTPClient(Cmd):
         """
         Exits the command loop of the client program.
         """
-        self.socket.close()
+        if self.socket is not None:
+            if self.socket.fileno() != -1:
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
         sys.exit("Quitting FTPClient...")
