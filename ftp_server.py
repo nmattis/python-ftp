@@ -29,6 +29,7 @@ class ClientThread(Thread):
                 self.socket.sendall(data)
             else:
                 print("No more data from client...")
+                break
 
 
 class FTPServer():

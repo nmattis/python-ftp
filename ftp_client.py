@@ -32,50 +32,53 @@ class FTPClient(Cmd):
         """
         vals = args.split()
         if len(vals) == 3:
-            server_ip, user_name, password = vals
-            print("Trying to connect to server {} with user:password -> {}:{}".format(server_ip, user_name, password))
-            print()
-            try:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.socket.connect((server_ip, self.ftp_port))
-                packet = "rftp,user:{},passwd:{}".format(user_name, password)
-                print("Sending message: {}".format(packet))
-                self.socket.sendall(packet.encode('utf-8'))
+            if self.connected:
+                print("Client already connected to server (ip, port) : {}".format(self.socket.getpeername()))
+            else:
+                server_ip, user_name, password = vals
+                print("Trying to connect to server {} with user:password -> {}:{}".format(server_ip, user_name, password))
+                print()
+                try:
+                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.socket.connect((server_ip, self.ftp_port))
+                    packet = "rftp,user:{},passwd:{}".format(user_name, password)
+                    print("Sending message: {}".format(packet))
+                    self.socket.sendall(packet.encode('utf-8'))
 
-                while True:
-                    recv_data = self.socket.recv(1024)
-                    recv_data = recv_data.decode('utf-8').strip().split(",")
+                    while True:
+                        recv_data = self.socket.recv(1024)
+                        recv_data = recv_data.decode('utf-8').strip().split(",")
 
-                    if recv_data[0] == 'Success':
-                        self.connected = True
-                        print("Successfully Authenticated!")
-                        break
+                        if recv_data[0] == 'Success':
+                            self.connected = True
+                            print("Successfully Authenticated!")
+                            break
 
-                    if recv_data[0] == 'Unknown':
-                        self.connected = False
-                        print("User name and password incorrect, connection refused.")
-                        self.socket.shutdown(socket.SHUT_RDWR)
-                        self.socket.close()
-                        break
+                        if recv_data[0] == 'Unknown':
+                            self.connected = False
+                            print("User name and password incorrect, connection refused.")
+                            self.socket.shutdown(socket.SHUT_RDWR)
+                            self.socket.close()
+                            break
 
-                    if recv_data[0] == 'Expected':
-                        self.connected = False
-                        print("The client did not send the correct information, connection refused.")
-                        self.socket.shutdown(socket.SHUT_RDWR)
-                        self.socket.close()
-                        break
-                    
-            except socket_error as serr:
-                if serr.errno != errno.ECONNREFUSED:
-                    # if it isn't a connection refused reraise to deal with somewhere else
-                    raise serr
-                # else deal with it
-                message = (
-                    "Looks something happened to server {}. "
-                    "Check and ensure you have the right address "
-                    "and the server is running.".format(server_ip)
-                )
-                print(message)
+                        if recv_data[0] == 'Expected':
+                            self.connected = False
+                            print("The client did not send the correct information, connection refused.")
+                            self.socket.shutdown(socket.SHUT_RDWR)
+                            self.socket.close()
+                            break
+                        
+                except socket_error as serr:
+                    if serr.errno != errno.ECONNREFUSED:
+                        # if it isn't a connection refused reraise to deal with somewhere else
+                        raise serr
+                    # else deal with it
+                    message = (
+                        "Looks something happened to server {}. "
+                        "Check and ensure you have the right address "
+                        "and the server is running.".format(server_ip)
+                    )
+                    print(message)
         else:
             print("rftp requires exactly 3 arguments...")
             print()
