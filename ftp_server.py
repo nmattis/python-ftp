@@ -18,18 +18,49 @@ class ClientThread(Thread):
         self.socket = client_socket
         self.ip = client_ip
         self.port = client_port
+        self.buffer_size = 1024
         print("Server started thread for client {} on port {}".format(self.ip, self.port))
 
     def run(self):
         while True:
-            data = self.socket.recv(1024)
-            print("Server received data: {}".format(data))
-            if data:
-                print("Server sending data back to client...")
-                self.socket.sendall(data)
+            recv_data = self.socket.recv(self.buffer_size)
+            print("Server received data: {}".format(recv_data))
+            packet_info = recv_data.decode('utf-8').strip().split(",")
+
+            if packet_info[0] == "rput" and len(packet_info[1:]) == 2:
+                self.__read_file(*packet_info[1:])
+            elif packet_info[0] == "rget" and len(packet_info[1:]) == 1:
+                self.__send_file(*packet_info[1:])
             else:
-                print("No more data from client...")
+                if packet_info[0] is not '':
+                    print("Server does not support that check sent command")
+                    self.socket.sendall("Invalid".encode('utf-8'))
+
+            if not recv_data:
+                print("Disconnecting from client {}:{}".format(self.ip, self.port))
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
                 break
+
+    def __read_file(self, file_name, length):
+        self.socket.sendall("Ready".encode("utf-8"))
+        print("Server ready to accept file: {} from client: {}:{}".format(file_name, self.ip, self.port))
+
+        save_file = open("server_files/{}".format(file_name), "wb")
+
+        amount_recieved_data = 0
+        while amount_recieved_data < int(length):
+            recv_data = self.socket.recv(self.buffer_size)
+            amount_recieved_data += len(recv_data)
+            save_file.write(recv_data)
+
+        save_file.close()
+
+        self.socket.sendall("Received,{}".format(amount_recieved_data).encode('utf-8'))
+        print("Server done receiving from client {}:{}. File Saved.".format(self.ip, self.port))
+    
+    def __send_file(self, file_name):
+        print(file_name)
 
 
 class FTPServer():

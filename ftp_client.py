@@ -7,6 +7,7 @@ or uploading of files.
 """
 
 import errno
+import os
 import socket
 import sys
 from cmd import Cmd
@@ -108,14 +109,43 @@ class FTPClient(Cmd):
         If connected to an FTPServer instance and the file exists on the client
         it instantiates an upload of the file to the FTPServer.
         """
-        vals = args.split()
-        if len(vals) == 1:
-            file_name = vals[0]
-            print("Trying to upload file {} from client to server.".format(file_name))
-            print()
-        else:        
-            print("rput requires exactly 1 arguments...")
-            print()
+        if self.connected:
+            vals = args.split()
+            if len(vals) == 1:
+                file_name = vals[0]
+                print("Trying to upload file {} from client to server.".format(file_name))
+                print()
+
+                try:
+                    packet = "rput,{},{}".format(file_name, os.path.getsize(file_name))
+                    self.socket.sendall(packet.encode('utf-8'))
+                    
+                    while True:
+                        recv_data = self.socket.recv(1024)
+                        packet_info = recv_data.decode('utf-8').strip().split(",")
+
+                        if packet_info[0] == "Ready":
+                            print("Sending file {} to server {}".format(file_name, self.socket.getpeername()))
+
+                            with open(file_name, mode="rb") as file:
+                                self.socket.sendfile(file)
+                        elif packet_info[0] == "Received":
+                            if int(packet_info[1]) == os.path.getsize(file_name):
+                                print("{} successfully uploaded to server {}".format(file_name, self.socket.getpeername()))
+                                break
+                            else:
+                                print("Something went wrong trying to upload to server {}. Try again".format(self.socket.getpeername()))
+                                break
+                        else:
+                            print("Something went wrong trying to upload to server {}. Try again.".format(self.socket.getpeername()))
+                            break
+                except IOError:
+                    print("File doesn't exist on the system!")
+            else:        
+                print("rput requires exactly 1 arguments...")
+                print()
+        else:
+            print("You must use the 'rftp' command to first connect to a server before uploading a file.")
 
     def do_quit(self, args):
         """

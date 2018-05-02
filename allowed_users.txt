@@ -1,4 +1,4 @@
 name,passwd
 nick,password
-admin,secure password
+admin,secure_password
 test,test
