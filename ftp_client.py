@@ -70,10 +70,6 @@ class FTPClient(Cmd):
                             break
                         
                 except socket_error as serr:
-                    if serr.errno != errno.ECONNREFUSED:
-                        # if it isn't a connection refused reraise to deal with somewhere else
-                        raise serr
-                    # else deal with it
                     message = (
                         "Looks something happened to server {}. "
                         "Check and ensure you have the right address "
@@ -196,6 +192,5 @@ class FTPClient(Cmd):
         """
         if self.socket is not None:
             if self.socket.fileno() != -1:
-                self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
         sys.exit("Quitting FTPClient...")
