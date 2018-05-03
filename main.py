@@ -14,6 +14,9 @@ from ftp_server import FTPServer
 
 
 def main():
+    """
+    Takes in args, either creates and runs a server instance or client instance.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("-s", "--server", help="Create and run a FTP server instance", action="store_true")
     ap.add_argument("-c", "--client", help="Create and run a FTP client instance", action="store_true")
