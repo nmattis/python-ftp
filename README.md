@@ -16,3 +16,5 @@ To run the client:
 
 This is just a project to learn some socket stuff, there is a txt file for user/passwords and everything is sent as plain bytes
 over the connection. Do not actually use this if you need reliable file transfer and or security.
+
+Maybe one day I'll come back and make it actually usable for secure transfers, etc.
