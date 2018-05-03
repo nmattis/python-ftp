@@ -1,4 +1,0 @@
-name,passwd
-nick,password
-admin,secure_password
-test,test
